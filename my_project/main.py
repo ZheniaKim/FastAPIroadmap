@@ -1,7 +1,5 @@
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-
-
+from models import User, Post
 
 app = FastAPI()
 
@@ -10,28 +8,14 @@ Posts = []
 
 
 
-class User(BaseModel):
-    username:str
-    posts : list = []
-    friend:list = []
-
-
-class Post(BaseModel):
-    author:User
-    text:str    
-    
-class get_post:
-    author:str
-    text:str    
-
 User1 = User(username = 'Zhenia')
 Users.append(User1)
-post1 = Post(author=User1, text='hello it is my first post')
+User2 = User(username = 'Andrey')
+Users.append(User2)
+post1 = Post(author="Zhenia", text='hello it is my first post')
 Posts.append(post1)
+User1.posts.append(post1)
 
-@app.get('/main')
-def get_posts():
-    return Posts
 
 
 @app.post('/creat_user')
@@ -50,19 +34,25 @@ def get_Users():
 
 
 @app.post('/create_post')
-def create_post(username:str,text:str):
-    user = next((user for user in Users if user.username == username),None)
-    if user == None:
-        raise HTTPException(status_code=404, detail="user not found")
-    new_post = Post(author=user,text=text)
-    Posts.append(new_post)
-    return new_post.author.username, new_post.text
+def create_post(postauthor:str,text:str):
+    for user in Users:
+        if user.username == postauthor:
+            new_post = Post(author=user.username,text=text)
+            user.posts.append(new_post)
+            return new_post
+        else:
+            raise HTTPException(status_code=404,datail='User not found')
 
 
 @app.get('/posts')
 def get_posts():
-    getpost = []
-    for post in Posts:
-        getpost.append({post.author.username:post.text})
-    return getpost    
+    return Posts   
 
+
+@app.get('/posts/{username}')
+def get_userpost(username:str):
+    for user in Users:
+        if user.username == username:
+            return user.posts
+        else:
+            raise HTTPException(status_code=404,detail='Username not found')  
